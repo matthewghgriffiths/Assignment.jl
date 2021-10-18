@@ -188,25 +188,25 @@ assignment problem with a rectangular cost matrix C.
 ```julia
 julia> M=rand(1:100,3,4)
 3×4 Matrix{Int64}:
- 55  17  88  52
- 29  38  90  20
- 63  23  19  87
+ 77  51  42  67
+ 72  53  47   4
+ 24  50  77  96
 
- julia> sols = find_kbest_assignments(M, 5)
- 5-element Vector{Assignment.AssignmentSolution{Int64}}:
-  AssignmentSolution(CartesianIndex.(1:4, [2, 4, 3, 1]), 56)
-  AssignmentSolution(CartesianIndex.(1:4, [2, 1, 3, 4]), 65)
-  AssignmentSolution(CartesianIndex.(1:4, [1, 4, 3, 2]), 94)
-  AssignmentSolution(CartesianIndex.(1:4, [1, 4, 2, 3]), 98)
-  AssignmentSolution(CartesianIndex.(1:4, [2, 4, 1, 3]), 100)
+ julia> sols = find_kbest_assigments(M, 5)
+ 5-element Vector{Assignment.AssignmentSolution{Int64, Int64}}:
+  AssignmentSolution(CartesianIndex.(1:3, [3, 4, 1]), 70)
+  AssignmentSolution(CartesianIndex.(1:3, [2, 4, 1]), 79)
+  AssignmentSolution(CartesianIndex.(1:3, [3, 4, 2]), 96)
+  AssignmentSolution(CartesianIndex.(1:3, [3, 2, 1]), 119)
+  AssignmentSolution(CartesianIndex.(1:3, [2, 3, 1]), 122)
   
  julia> max_sols = find_kbest_assignments(M, 5, true)
- 5-element Vector{Assignment.AssignmentSolution{Int64}}:
-  AssignmentSolution(CartesianIndex.(1:4, [1, 3, 4, 2]), 232)
-  AssignmentSolution(CartesianIndex.(1:4, [3, 2, 4, 1]), 213)
-  AssignmentSolution(CartesianIndex.(1:4, [4, 3, 1, 2]), 205)
-  AssignmentSolution(CartesianIndex.(1:4, [3, 1, 4, 2]), 204)
-  AssignmentSolution(CartesianIndex.(1:4, [2, 3, 4, 1]), 194)
+ 5-element Vector{Assignment.AssignmentSolution{Int64, Int64}}:
+  AssignmentSolution(CartesianIndex.(1:3, [1, 2, 4]), 226)
+  AssignmentSolution(CartesianIndex.(1:3, [1, 3, 4]), 220)
+  AssignmentSolution(CartesianIndex.(1:3, [2, 1, 4]), 219)
+  AssignmentSolution(CartesianIndex.(1:3, [4, 1, 3]), 216)
+  AssignmentSolution(CartesianIndex.(1:3, [3, 1, 4]), 210)
 ```
 
 This is an implementation of Murty's method, which is described in [1].

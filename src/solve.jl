@@ -14,18 +14,18 @@ Note that cost returned can overflow if using smaller integer types
 ```julia
 julia> M=rand(1:100,3,4)
 3×4 Matrix{Int64}:
- 55  17  88  52
- 29  38  90  20
- 63  23  19  87
+ 77  51  42  67
+ 72  53  47   4
+ 24  50  77  96
 
-julia> sol = find_best_assignment(M)
-AssignmentSolution(CartesianIndex.(1:3, [2, 4, 3]), 56)
-
-julia> sum(M[sol])
-56
-
-julia> max_sol = find_best_assignment(M, true)
-AssignmentSolution(CartesianIndex.(1:3, [1, 3, 4]), 232)
+ julia> sol = find_best_assignment(M)
+ AssignmentSolution(CartesianIndex.(1:3, [3, 4, 1]), 70)
+ 
+ julia> sum(M[sol])
+ 70
+ 
+ julia> max_sol = find_best_assignment(M', true)
+ AssignmentSolution(CartesianIndex.([1, 2, 4], 1:3), 226)
 ```
 
 This code is a port of Matlab code released [1] in the public domain by the
