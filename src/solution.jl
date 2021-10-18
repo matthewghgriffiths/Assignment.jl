@@ -3,29 +3,34 @@
 Stores the solution of an assigment problem
 
 Can be directly used to index the appropriate values from the cost matrix 
-
-The solution value is stored in the gain field
 """
-struct AssignmentSolution{T}
+struct AssignmentSolution{T, S}
 	row4col::Vector{Int}
 	col4row::Vector{Int}
-	gain::Union{T, Nothing}
-	v::Vector{T}
-	u::Vector{T}
+	cost::Union{T, Nothing}
+	v::Vector{S}
+	u::Vector{S}
 	use_row::Bool
+
+    # AssignmentSolution(row4col, col4row, cost::Nothing, u::Vector{S}, v::Vector{S}, use_row) where S = new{S, S}(row4col, col4row, cost, u, v, use_row)
+    AssignmentSolution{T, S}(row4col, col4row, cost::T, u::Vector{S}, v::Vector{S}, use_row) where {T, S} = new{T, S}(row4col, col4row, cost, u, v, use_row)
+    AssignmentSolution{T, S}(row4col, col4row, cost::Nothing, u::Vector{S}, v::Vector{S}, use_row) where {T, S} = new{T, S}(row4col, col4row, cost, u, v, use_row)
+    AssignmentSolution(row4col, col4row, cost::T, u::Vector{S}, v::Vector{S}, use_row) where {T, S} = new{T, S}(row4col, col4row, cost, u, v, use_row)
 end
 
-
-function AssignmentSolution(row4col::Vector{Int}, col4row::Vector{Int}, gain, u::Vector{T}, v::Vector{T}) where {T}
+function AssignmentSolution{T, S}(row4col, col4row, cost::Union{T, Nothing}, u::Vector{S}, v::Vector{S}) where {T, S}
 	n = length(row4col)
 	m = length(col4row)
 	@assert n == length(v) 
 	@assert m == length(u)
-	AssignmentSolution{T}(row4col, col4row, gain, u, v, n <=m)
+	AssignmentSolution{T, S}(row4col, col4row, cost, u, v, n <=m)
 end
 
-Base.adjoint(sol::AssignmentSolution) = AssignmentSolution(
-	sol.col4row, sol.row4col, sol.gain, sol.u, sol.v, length(sol.col4row) <= length(sol.row4col))
+AssignmentSolution(row4col::Vector{Int}, col4row::Vector{Int}, cost::T, u::Vector{S}, v::Vector{S}) where {T, S} = 
+    AssignmentSolution{isnothing(cost) ? S : T, S}(row4col, col4row, cost, u, v)
+
+Base.adjoint(sol::AssignmentSolution{T, S}) where {T, S} = AssignmentSolution{T, S}(
+	sol.col4row, sol.row4col, sol.cost, sol.u, sol.v, length(sol.col4row) <= length(sol.row4col))
 
 Base.getindex(sol::AssignmentSolution, i::Integer) = sol.use_row ? CartesianIndex(i, sol.row4col[i]) : CartesianIndex(sol.col4row[i], i)
 
@@ -42,7 +47,7 @@ end
 Base.getindex(A::AbstractMatrix, sol::AssignmentSolution) = A[collect(sol)]
 
 Base.show(io::IO, sol::AssignmentSolution) = if sol.use_row
-    print(io, "AssignmentSolution(CartesianIndex.(1:$(length(sol.row4col)), $(sol.row4col)), $(sol.gain))")
+    print(io, "AssignmentSolution(CartesianIndex.(1:$(length(sol.u)), $(sol.row4col)), $(sol.cost))")
 else
-    print(io, "AssignmentSolution(CartesianIndex.($(sol.col4row), 1:$(length(sol.col4row))), $(sol.gain))")
+    print(io, "AssignmentSolution(CartesianIndex.($(sol.col4row), 1:$(length(sol.v))), $(sol.cost))")
 end

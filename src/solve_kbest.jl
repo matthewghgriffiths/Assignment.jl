@@ -2,7 +2,7 @@
 
 
 
-struct MurtyData{T, M<:AbstractMatrix{T}}
+struct MurtyData{T, M<:AbstractMatrix{T}, S}
 	A::M
 	numVarRow::Int
 	activeRow::Int
@@ -10,8 +10,8 @@ struct MurtyData{T, M<:AbstractMatrix{T}}
 	col4rowLCFull::Vector{Int}
 	row4colLCFull::Vector{Int}
 	gainFull::Union{T, Nothing}
-	u::Vector{T}
-	v::Vector{T}
+	u::Vector{S}
+	v::Vector{S}
 end
 
 function MurtyData(A::AbstractMatrix, numVarRow::Integer)
@@ -25,7 +25,7 @@ function MurtyData(A::AbstractMatrix, numVarRow::Integer)
 
 	return MurtyData(
 		A, numVarRow, 1, forbiddenActiveCol, 
-		sol.col4row, sol.row4col, sol.gain, sol.v, sol.u)
+		sol.col4row, sol.row4col, sol.cost, sol.v, sol.u)
 end
 
 Base.isless(a::MurtyData, b::MurtyData) = Base.isless(a.gainFull, b.gainFull)
@@ -39,11 +39,11 @@ for op in (:<, :>, :(<=), :(>=), :(==), :(!=))
 end
 
 
-function AssignmentSolution(data::MurtyData, CDelta=0, maximize=false) 
+function AssignmentSolution(data::MurtyData{T, M, S}, CDelta=T(0), maximize=false) where {T, M, S}
 	numCol = size(data.A, 2)
 	numRow = data.numVarRow
 	
-	col4row = data.col4rowLCFull[:]
+	col4row = data.col4rowLCFull[1:numRow]
 	row4col = data.row4colLCFull[:]
 	if numRow < numCol
 		for (i, j) in enumerate(row4col)
@@ -55,7 +55,7 @@ function AssignmentSolution(data::MurtyData, CDelta=0, maximize=false)
 	gain =  maximize ? CDelta * numRow  - data.gainFull : CDelta * numRow + data.gainFull
 	
 		
-	return AssignmentSolution(col4row, row4col, gain, data.u[:], data.v[:])
+	return AssignmentSolution{T, S}(col4row, row4col, T(gain), data.u[:], data.v[1:numRow])
 end
 
 function ConstrainedShortestPath!(
@@ -66,13 +66,13 @@ function ConstrainedShortestPath!(
 		col4row::AbstractVector{Int}, 
 		row4col::AbstractVector{Int}, 
 		col2Scan::AbstractVector{Int}, 
-		u::AbstractVector{T}, 
-		v::AbstractVector{T},
+		u::AbstractVector{S}, 
+		v::AbstractVector{S},
 		ScannedRows::AbstractVector{Bool} = falses(size(C,1)),
 		ScannedCol::AbstractVector{Bool} = falses(size(C,2)),
     	pred::AbstractVector{Int} = zeros(Int, size(C,2)),
 		shortestPathCost::AbstractVector = fill(Inf, size(C,2))
-	) where {T}
+	) where {T, S}
 	
 	numRow = size(C,1)
 	numCol = size(C,2)
@@ -83,7 +83,7 @@ function ConstrainedShortestPath!(
 	shortestPathCost[:] .= Inf
 	
 	sink = 0
-	delta = T(0)
+	delta = S(0)
     curRow = activeRow
 	closestColScan=0
 	
@@ -128,7 +128,7 @@ function ConstrainedShortestPath!(
 			col2Scan[i] = col2Scan[i + 1]
 		end
         
-        delta=shortestPathCost[closestCol]
+        delta = S(shortestPathCost[closestCol])
         
         # If we have reached an unassigned row.
         if row4col[closestCol]==0 
@@ -144,13 +144,13 @@ function ConstrainedShortestPath!(
     # Update the rest of the rows in the agumenting path.
 	@inbounds for (i, col) in enumerate(ScannedRows)
 		if col != 0 && i != activeRow
-			u[i] += delta - shortestPathCost[col4row[i]]
+			u[i] += delta - S(shortestPathCost[col4row[i]])
 		end
 	end
     # Update the scanned columns in the augmenting path.
 	@inbounds for (i, row) in enumerate(ScannedCol)
 		if row != 0
-			v[i] -= delta - shortestPathCost[i]
+			v[i] -= delta - S(shortestPathCost[i])
 		end
 	end
 	
@@ -179,7 +179,7 @@ function ConstrainedShortestPath!(
 end
 
 """
-find_kbest_assigments(C, k, maximize=false) -> kbest_sols
+find_kbest_assignments(C, k, maximize=false) -> kbest_sols
 
 Find the k lowest [or highest] cost 2D assignments for the two-dimensional 
 assignment problem with a rectangular cost matrix C.
@@ -192,7 +192,7 @@ julia> M=rand(1:100,3,4)
  29  38  90  20
  63  23  19  87
 
- julia> sols = find_kbest_assigments(M, 5)
+ julia> sols = find_kbest_assignments(M, 5)
  5-element Vector{Assignment.AssignmentSolution{Int64}}:
   AssignmentSolution(CartesianIndex.(1:4, [2, 4, 3, 1]), 56)
   AssignmentSolution(CartesianIndex.(1:4, [2, 1, 3, 4]), 65)
@@ -200,7 +200,7 @@ julia> M=rand(1:100,3,4)
   AssignmentSolution(CartesianIndex.(1:4, [1, 4, 2, 3]), 98)
   AssignmentSolution(CartesianIndex.(1:4, [2, 4, 1, 3]), 100)
   
- julia> max_sols = find_kbest_assigments(M, 5, true)
+ julia> max_sols = find_kbest_assignments(M, 5, true)
  5-element Vector{Assignment.AssignmentSolution{Int64}}:
   AssignmentSolution(CartesianIndex.(1:4, [1, 3, 4, 2]), 232)
   AssignmentSolution(CartesianIndex.(1:4, [3, 2, 4, 1]), 213)
@@ -241,11 +241,11 @@ This work is not affliated or endorsed by the Naval Research Laboratory.
 October 2013 David F. Crouse; Naval Research Laboratory; Washington D.C.
 (UNCLASSIFIED) DISTRIBUTION STATEMENT A. Approved for public release.
 """
-function find_kbest_assigments(C::AbstractMatrix{T}, k::Integer, maximize=false) where T
+function find_kbest_assignments(C::AbstractMatrix{T}, k::Integer, maximize=false) where T
     numRow, numCol = size(C)
 	
 	if numRow > numCol 
-		sols = find_kbest_assigments(C', k, maximize)
+		sols = find_kbest_assignments(C', k, maximize)
 		for (i, sol) in enumerate(sols)
 			sols[i] = sol'
 		end
@@ -275,7 +275,7 @@ function find_kbest_assigments(C::AbstractMatrix{T}, k::Integer, maximize=false)
 
 	#Check for feasibility.
     if isnothing(LCHyp.gainFull) 
-        return AssignmentSolution{T}[]
+        return AssignmentSolution{T, _dual_eltype(T)}[]
     end
 	
 	k_best = [AssignmentSolution(LCHyp, CDelta, maximize)]

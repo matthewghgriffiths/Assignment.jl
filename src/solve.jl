@@ -1,10 +1,14 @@
 
 
+_dual_eltype(T) = T <: Integer ? signed(promote_type(T, Int32)) : T
+
 """
 find_best_assignment(C, maximize=false) = solution
 
 Solve the two-dimensional assignment problem with a rectangular cost matrix C, 
 scanning row-wise.
+
+Note that cost returned can overflow if using smaller integer types
 
 # Example 
 ```julia
@@ -39,29 +43,30 @@ REFERENCES:
    Prototyping," IEEE Aerospace and Electronic Systems Magazine, vol. 32, 
    no. 5, pp. 18-27, May. 2017
 """
-function find_best_assignment(C::AbstractMatrix{T}, maximize::Bool=false) where T
+function find_best_assignment(cost_matrix::AbstractMatrix{T}, maximize::Bool=false) where T
 	   
-    numRow, numCol = size(C)
+    numRow, numCol = size(cost_matrix)
 	gain = nothing
     
-    numCol > numRow && return find_best_assignment(C', maximize)'
+    numCol > numRow && return find_best_assignment(cost_matrix', maximize)'
 	
 	# The cost matrix must have all non-negative elements for the assignment
 	# algorithm to work. This forces all of the elements to be positive. The
 	# delta is added back in when computing the gain in the end.
     if maximize
-        CDelta=maximum(C)
-        C =-C .+ CDelta
+        CDelta = maximum(cost_matrix)
+        C = CDelta .- cost_matrix 
     else
-        CDelta=minimum(C)
-        C = C .- CDelta
+        CDelta = minimum(cost_matrix)
+        C = cost_matrix .- CDelta
     end
 
     # These store the assignment as it is made.
     col4row=zeros(Int, numRow)
     row4col=zeros(Int, numCol)
-    u=zeros(T, numCol) # The dual variable for the columns
-    v=zeros(T, numRow) # The dual variable for the rows.
+    S = _dual_eltype(T)
+    u=zeros(S, numCol) # The dual variable for the columns
+    v=zeros(S, numRow) # The dual variable for the rows.
 	
 	pred = zeros(Int, numRow)
 	ScannedCols = falses(numCol)
@@ -80,11 +85,11 @@ function find_best_assignment(C::AbstractMatrix{T}, maximize::Bool=false) where 
 		)
         
         # If the problem is infeasible, mark it as such and return.
-		sink == 0 && return AssignmentSolution(row4col, col4row, gain, v, u)
+		sink == 0 && return AssignmentSolution{T, S}(row4col, col4row, nothing, v, u, true)
         
         # We have to remove node k from those that must be assigned.
         j = sink
-        while true
+        @inbounds while true
             i = col4row[j] = pred[j]
             j, row4col[i] = row4col[i], j   			
 			
@@ -95,19 +100,18 @@ function find_best_assignment(C::AbstractMatrix{T}, maximize::Bool=false) where 
     end
 	
 
-	gain = maximize ? - CDelta*numCol : CDelta*numCol
-	for curCol=1:numCol
-		gain += C[row4col[curCol],curCol]
+	gain = T(0)
+	@inbounds for curCol=1:numCol
+		gain += cost_matrix[row4col[curCol],curCol]
 	end
-
-	return AssignmentSolution(col4row, row4col, maximize ? -gain : gain, u, v)
+	return AssignmentSolution{T, S}(col4row, row4col, gain, u, v)
 end
 
 
 function ShortestPath!(
 		curUnassCol::Int,
-		u::AbstractVector{T},
-		v::AbstractVector{T},
+		u::AbstractVector{S},
+		v::AbstractVector{S},
 		C::AbstractMatrix{T},
 		col4row::AbstractVector{<:Integer},
 		row4col::AbstractVector{<:Integer}, 
@@ -116,7 +120,7 @@ function ShortestPath!(
 		ScannedRow::AbstractVector{<:Bool} = falses(size(C,2)), 
 		Row2Scan::AbstractVector{<:Integer} = Vector(1:size(C, 1)),
     	shortestPathCost::AbstractVector = fill(Inf, size(C, 1))
-	) where T
+	) where {T, S}
     # This assumes that unassigned columns go from 1:numUnassigned
     numRow, numCol = size(C)
 	
@@ -187,14 +191,14 @@ function ShortestPath!(
     #Update the rest of the rows in the agumenting path.
 	@inbounds for (i, col) in enumerate(ScannedCols)
 		if col != 0 && i != curUnassCol
-			u[i] += delta - shortestPathCost[row4col[i]]
+			u[i] += delta - convert(T, shortestPathCost[row4col[i]])
 		end
 	end
     
     # Update the scanned columns in the augmenting path.
 	@inbounds for (i, row) in enumerate(ScannedRow)
 		if row != 0
-			v[i] -= delta - shortestPathCost[i]
+			v[i] -= delta - convert(T, shortestPathCost[i])
 		end
 	end
 	

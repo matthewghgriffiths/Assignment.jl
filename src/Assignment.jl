@@ -1,6 +1,6 @@
 module Assignment
 
-export find_best_assignment, find_kbest_assigments
+export find_best_assignment, find_kbest_assignments
 
 import Base: <, >, <=, >=, ==, !=
 using DataStructures
