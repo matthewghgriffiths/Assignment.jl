@@ -1,7 +1,3 @@
-
-
-_dual_eltype(T) = T <: Integer ? signed(promote_type(T, Int32)) : T
-
 """
 find_best_assignment(C, maximize=false) = solution
 
@@ -106,6 +102,9 @@ function find_best_assignment(cost_matrix::AbstractMatrix{T}, maximize::Bool=fal
 	end
 	return AssignmentSolution{T, S}(col4row, row4col, gain, u, v)
 end
+
+
+_dual_eltype(T) = T <: Integer ? signed(promote_type(T, Int32)) : T
 
 
 function ShortestPath!(

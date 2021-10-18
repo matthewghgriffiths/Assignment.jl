@@ -1,4 +1,3 @@
-
 """
 Stores the solution of an assigment problem
 
