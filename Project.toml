@@ -3,6 +3,9 @@ uuid = "30268ba6-d258-4c5c-9bcf-b5809bbf81b5"
 authors = ["Matthew Griffiths <matthewghgriffiths@gmail.com> and contributors"]
 version = "0.1.0"
 
+[deps]
+DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+
 [compat]
 julia = "1"
 
