@@ -1,4 +1,5 @@
-using Test, Revise, Combinatorics
+using Test
+using Combinatorics
 using Assignment
 
 find_best(M, k) = size(M, 1) > size(M, 2) ? find_best(M', k) : partialsort([
