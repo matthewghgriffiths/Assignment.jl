@@ -27,17 +27,17 @@ julia> M=rand(1:100,3,4)
 This code is a port of Matlab code released [1] in the public domain by the
 US Naval Research Laboratory. 
 
-This work is not affliated or endorsed by the Naval Research Laboratory.
+This work is not affliated with or endorsed by the US Naval Research Laboratory.
 
-The algorithm is described in detail in 
-D. F. Crouse, "Advances in displaying uncertain estimates of multiple
-targets," in Proceedings of SPIE: Signal Processing, Sensor Fusion, and
-Target Recognition XXII, vol. 8745, Baltimore, MD, Apr. 2013.
+The algorithm is described in detail in [2].
 
 REFERENCES:
 [1] D. F. Crouse, "The Tracker Component Library: Free Routines for Rapid 
    Prototyping," IEEE Aerospace and Electronic Systems Magazine, vol. 32, 
    no. 5, pp. 18-27, May. 2017
+[2] D. F. Crouse, "Advances in displaying uncertain estimates of multiple
+   targets," in Proceedings of SPIE: Signal Processing, Sensor Fusion, and
+   Target Recognition XXII, vol. 8745, Baltimore, MD, Apr. 2013
 """
 function find_best_assignment(cost_matrix::AbstractMatrix{T}, maximize::Bool=false) where T
 	   

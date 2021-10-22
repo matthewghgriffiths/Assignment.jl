@@ -42,7 +42,7 @@ ordered list implemented using the BinaryMinHeap class.
 This code is a port of Matlab code released in the public domain by the
 US Naval Research Laboratory [4]. 
 
-This work is not affliated or endorsed by the Naval Research Laboratory.
+This work is not affliated with or endorsed by the US Naval Research Laboratory.
 
 # References
 [1] K. G. Murty, "An algorithm for ranking all the assignments in order of
